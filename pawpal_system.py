@@ -8,7 +8,7 @@ Class hierarchy:
 """
 
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 
 
 # ---------------------------------------------------------------------------
@@ -39,12 +39,12 @@ class Pet:
     tasks: list = field(default_factory=list)
 
     def add_task(self, task: Task) -> None:
-        """Add a Task to this pet's task list."""
-        pass
+        """Append a Task to this pet's task list."""
+        self.tasks.append(task)
 
     def get_tasks(self) -> list:
         """Return all tasks for this pet."""
-        pass
+        return self.tasks
 
 
 # ---------------------------------------------------------------------------
@@ -61,11 +61,14 @@ class Owner:
 
     def add_pet(self, pet: Pet) -> None:
         """Register a pet under this owner."""
-        pass
+        self.pets.append(pet)
 
     def get_all_tasks(self) -> list[Task]:
         """Collect and return every task across all pets."""
-        pass
+        all_tasks = []
+        for pet in self.pets:
+            all_tasks.extend(pet.get_tasks())
+        return all_tasks
 
 
 # ---------------------------------------------------------------------------
@@ -83,37 +86,70 @@ class Scheduler:
 
     def get_all_tasks(self) -> list[Task]:
         """Retrieve every task across all of the owner's pets."""
-        pass
+        return self.owner.get_all_tasks()
 
     def sort_by_time(self) -> list[Task]:
         """
         Return all tasks sorted chronologically by their 'time' field.
-        Uses sorted() with a lambda on the 'HH:MM' string — lexicographic
-        sort works correctly for zero-padded 24-hour time strings.
+        Lexicographic sort works correctly for zero-padded HH:MM strings.
         """
-        pass
+        return sorted(self.get_all_tasks(), key=lambda task: task.time)
 
     def filter_tasks(self, status: str = None, pet_name: str = None) -> list[Task]:
         """
         Return tasks matching the given filter(s).
-        - status: filter by 'pending' or 'complete'
-        - pet_name: filter to a specific pet
-        Both filters can be combined.
+        Both status and pet_name filters can be combined.
         """
-        pass
+        tasks = self.get_all_tasks()
+        if status:
+            tasks = [t for t in tasks if t.status == status]
+        if pet_name:
+            tasks = [t for t in tasks if t.pet_name == pet_name]
+        return tasks
 
     def mark_complete(self, task: Task) -> None:
         """
-        Mark a task complete. For recurring tasks, auto-create the next instance:
-        - 'daily'  → new task with due_date + timedelta(days=1)
-        - 'weekly' → new task with due_date + timedelta(weeks=1)
+        Mark a task complete. For recurring tasks, auto-create the next instance
+        on the appropriate pet and add it to that pet's task list.
         """
-        pass
+        task.status = "complete"
+
+        if task.frequency == "daily":
+            next_due = task.due_date + timedelta(days=1)
+        elif task.frequency == "weekly":
+            next_due = task.due_date + timedelta(weeks=1)
+        else:
+            return  # non-recurring — nothing more to do
+
+        next_task = Task(
+            description=task.description,
+            time=task.time,
+            frequency=task.frequency,
+            pet_name=task.pet_name,
+            status="pending",
+            due_date=next_due,
+        )
+
+        # Find the pet this task belongs to and add the next occurrence
+        for pet in self.owner.pets:
+            if pet.name == task.pet_name:
+                pet.add_task(next_task)
+                break
 
     def detect_conflicts(self) -> list[str]:
         """
-        Check for scheduling conflicts: two tasks for the same pet at the same time.
-        Returns a list of warning strings (never crashes).
-        Returns an empty list if no conflicts are found.
+        Flag any two tasks for the same pet scheduled at the exact same time.
+        Returns a list of warning strings; never crashes.
         """
-        pass
+        warnings = []
+        for pet in self.owner.pets:
+            seen: dict[str, str] = {}  # time → description of first task seen
+            for task in pet.get_tasks():
+                if task.time in seen:
+                    warnings.append(
+                        f"Conflict for {pet.name}: '{seen[task.time]}' and "
+                        f"'{task.description}' both scheduled at {task.time}"
+                    )
+                else:
+                    seen[task.time] = task.description
+        return warnings
