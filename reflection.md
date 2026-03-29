@@ -26,8 +26,9 @@ Key relationship: `Owner → Pet → Task` is a strict composition chain. `Sched
 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
+Yes, simply used Claude to help refactor and make sure the relationships made sense between pets, owners, and tasks
 
----
+--
 
 ## 2. Scheduling Logic and Tradeoffs
 
