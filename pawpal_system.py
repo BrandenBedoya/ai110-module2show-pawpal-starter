@@ -95,7 +95,7 @@ class Scheduler:
         """
         return sorted(self.get_all_tasks(), key=lambda task: task.time)
 
-    def filter_tasks(self, status: str = None, pet_name: str = None) -> list[Task]:
+    def filter_tasks(self, status: str | None = None, pet_name: str | None = None) -> list[Task]:
         """
         Return tasks matching the given filter(s).
         Both status and pet_name filters can be combined.

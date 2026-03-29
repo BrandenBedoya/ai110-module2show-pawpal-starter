@@ -48,13 +48,17 @@ This is a reasonable tradeoff for this scenario because tasks in PawPal+ don't c
 
 **a. How you used AI**
 
-- How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
-- What kinds of prompts or questions were most helpful?
+Claude Code (via the VS Code extension) was the primary AI tool used throughout this project. It was most effective in three ways:
+
+1. **System design** — used in Phase 1 to brainstorm the four-class architecture, generate the Mermaid UML, and translate it into class skeletons with correct Python dataclass syntax.
+2. **Implementation scaffolding** — in Phase 2, used to flesh out all method bodies in `pawpal_system.py`, particularly the `mark_complete()` recurrence logic using `timedelta` and the `detect_conflicts()` dictionary-based approach.
+3. **Debugging and type checking** — Pylance (enabled in Phase 1) caught a type mismatch in `filter_tasks()` where `str` was declared but `None` was being passed. AI helped explain the fix (`str | None` union type) and why it matters.
+
+The most effective prompt style was giving specific context: referencing the file, describing the exact behavior needed, and asking for reasoning alongside the code — not just the answer.
 
 **b. Judgment and verification**
 
-- Describe one moment where you did not accept an AI suggestion as-is.
-- How did you evaluate or verify what the AI suggested?
+During Phase 4, Claude initially structured `detect_conflicts()` to check conflicts across *all pets* together rather than per pet. This would have incorrectly flagged two different pets having tasks at the same time as a conflict — which isn't actually a problem. The fix was to scope the conflict check *per pet* using a separate `seen` dictionary inside the loop for each pet. The logic was verified by writing `test_conflict_detection` which deliberately adds a collision on one pet and checks that only that conflict appears, not false positives from other pets.
 
 ---
 
@@ -62,13 +66,19 @@ This is a reasonable tradeoff for this scenario because tasks in PawPal+ don't c
 
 **a. What you tested**
 
-- What behaviors did you test?
-- Why were these tests important?
+Five behaviors were tested in `tests/test_pawpal.py`:
+
+- **Task completion** — `mark_complete()` mutates status correctly
+- **Task addition** — `Pet.add_task()` grows the task list
+- **Sort correctness** — `sort_by_time()` returns tasks in ascending HH:MM order regardless of insertion order
+- **Recurrence logic** — completing a `daily` task adds a new task with `due_date + 1 day`
+- **Conflict detection** — same-time tasks on the same pet produce a warning string
+
+These were important because they cover the three core algorithmic behaviors (sort, recur, conflict) plus the two most basic data mutations (add, complete). If any of these break, the app's core value is broken.
 
 **b. Confidence**
 
-- How confident are you that your scheduler works correctly?
-- What edge cases would you test next if you had more time?
+**4/5 stars.** All five tests pass and cover the primary happy paths. The gap is duration-based conflict detection — the scheduler only catches exact time collisions, not overlapping windows (e.g., a 30-min task at 07:00 overlapping a task at 07:20). That would require adding a `duration` field to `Task` and more complex interval logic, which is a natural next iteration.
 
 ---
 
@@ -76,12 +86,12 @@ This is a reasonable tradeoff for this scenario because tasks in PawPal+ don't c
 
 **a. What went well**
 
-- What part of this project are you most satisfied with?
+The CLI-first workflow was the most valuable structural decision. By verifying all logic in `main.py` before touching `app.py`, bugs in the backend were caught early — before the UI added a second layer of complexity. The `Scheduler` class staying separate from the data hierarchy (`Owner → Pet → Task`) also kept the code clean: adding a new algorithm only required touching one class.
 
 **b. What you would improve**
 
-- If you had another iteration, what would you improve or redesign?
+The `Task` class doesn't have a `duration` field, which limits conflict detection to exact-time matching. A future iteration would add `duration_minutes: int` to `Task` and update `detect_conflicts()` to check for time-window overlaps. The UI would also benefit from an edit/delete task feature — right now tasks can only be added, not removed.
 
 **c. Key takeaway**
 
-- What is one important thing you learned about designing systems or working with AI on this project?
+The most important lesson was that AI is a powerful *executor* but needs a human *architect*. When given a clear design (the UML, the class relationships, the specific method behaviors), Claude produced correct, clean code quickly. When the design was ambiguous, the AI made reasonable but wrong assumptions (like the cross-pet conflict bug). The lead architect role — defining constraints, reviewing output, and catching edge cases — was always the human's job.

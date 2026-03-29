@@ -22,6 +22,16 @@ Your final app should:
 - Display the plan clearly (and ideally explain the reasoning)
 - Include tests for the most important scheduling behaviors
 
+## Features
+
+- **Multi-pet support** — one owner profile manages any number of pets, each with their own task list
+- **Task scheduling** — add care tasks with a description, time (HH:MM), and frequency (daily, weekly, or one-time)
+- **Sorted daily view** — the schedule is always displayed in chronological order, regardless of the order tasks were added
+- **Filter by pet or status** — narrow the schedule view to a specific pet or show only pending/completed tasks
+- **Recurring tasks** — marking a daily or weekly task complete automatically schedules the next occurrence
+- **Conflict detection** — the scheduler warns when two tasks for the same pet share the exact same time slot
+- **Mark complete** — tasks can be marked done directly from the UI; recurring tasks self-schedule
+
 ## Smarter Scheduling
 
 PawPal+ includes four algorithmic features in the `Scheduler` class:

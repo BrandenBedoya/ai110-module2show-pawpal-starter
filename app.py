@@ -4,19 +4,17 @@ Imports all logic from pawpal_system.py. No scheduling logic lives here.
 """
 
 import streamlit as st
-from pawpal_system import Owner, Pet, Task, Scheduler  # Step 1: the connection
+from pawpal_system import Owner, Pet, Task, Scheduler
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 st.title("🐾 PawPal+")
 
 # ---------------------------------------------------------------------------
-# Step 2: Application "memory" via st.session_state
-# Think of session_state as a vault that survives page rerenders.
-# We only create the Owner once — if it already exists in the vault, skip it.
+# Session state — persists Owner object across Streamlit rerenders
 # ---------------------------------------------------------------------------
 
 if "owner" not in st.session_state:
-    st.session_state.owner = None  # no owner yet until the form is submitted
+    st.session_state.owner = None
 
 # ---------------------------------------------------------------------------
 # Section 1: Owner setup
@@ -31,9 +29,8 @@ if st.session_state.owner is None:
         submitted   = st.form_submit_button("Create profile")
 
     if submitted:
-        # Step 3: calling the actual Owner class from pawpal_system.py
         st.session_state.owner = Owner(name=owner_name, email=owner_email)
-        st.rerun()  # refresh so the page shows the owner dashboard
+        st.rerun()
 else:
     owner: Owner = st.session_state.owner
     st.success(f"Welcome back, {owner.name}!")
@@ -44,18 +41,18 @@ else:
 
     st.header("Add a Pet")
     with st.form("pet_form"):
-        pet_name    = st.text_input("Pet name",  value="Mochi")
+        pet_name    = st.text_input("Pet name", value="Mochi")
         pet_species = st.selectbox("Species", ["dog", "cat", "rabbit", "other"])
         pet_age     = st.number_input("Age (years)", min_value=0, max_value=30, value=3)
         add_pet_btn = st.form_submit_button("Add pet")
 
     if add_pet_btn:
         new_pet = Pet(name=pet_name, species=pet_species, age=int(pet_age))
-        owner.add_pet(new_pet)   # calling the method we wrote in Phase 2
+        owner.add_pet(new_pet)
         st.success(f"{pet_name} added!")
 
     # -----------------------------------------------------------------------
-    # Section 3: Add a task to a pet
+    # Section 3: Add a task
     # -----------------------------------------------------------------------
 
     st.header("Add a Task")
@@ -77,7 +74,6 @@ else:
                 frequency=task_freq,
                 pet_name=target_pet,
             )
-            # Find the right Pet object and call its add_task() method
             for pet in owner.pets:
                 if pet.name == target_pet:
                     pet.add_task(new_task)
@@ -85,32 +81,69 @@ else:
             st.success(f"Task '{task_desc}' added for {target_pet}!")
 
     # -----------------------------------------------------------------------
-    # Section 4: View the schedule
+    # Section 4: Today's Schedule
     # -----------------------------------------------------------------------
 
     st.header("Today's Schedule")
+
     if not owner.pets:
         st.info("No pets or tasks yet.")
     else:
         scheduler = Scheduler(owner)
 
-        # Conflict warnings first
+        # Filter controls
+        col1, col2 = st.columns(2)
+        with col1:
+            filter_pet = st.selectbox(
+                "Filter by pet",
+                ["All pets"] + [p.name for p in owner.pets]
+            )
+        with col2:
+            filter_status = st.selectbox(
+                "Filter by status",
+                ["All", "pending", "complete"]
+            )
+
+        # Conflict warnings
         conflicts = scheduler.detect_conflicts()
         for warning in conflicts:
-            st.warning(warning)
+            st.warning(f"⚠️ {warning}")
 
-        # Sorted schedule table
-        sorted_tasks = scheduler.sort_by_time()
-        if sorted_tasks:
+        # Apply filters then sort
+        pet_filter    = None if filter_pet == "All pets" else filter_pet
+        status_filter = None if filter_status == "All" else filter_status
+        filtered_tasks = scheduler.filter_tasks(status=status_filter, pet_name=pet_filter)
+        sorted_tasks   = sorted(filtered_tasks, key=lambda t: t.time)
+
+        if not sorted_tasks:
+            st.info("No tasks match the current filters.")
+        else:
             st.table([
                 {
-                    "Time":        t.time,
-                    "Pet":         t.pet_name,
-                    "Task":        t.description,
-                    "Frequency":   t.frequency,
-                    "Status":      t.status,
+                    "Time":      t.time,
+                    "Pet":       t.pet_name,
+                    "Task":      t.description,
+                    "Frequency": t.frequency,
+                    "Status":    t.status,
                 }
                 for t in sorted_tasks
             ])
+
+        # Mark complete
+        st.subheader("Mark a Task Complete")
+        pending_tasks = scheduler.filter_tasks(status="pending")
+        if not pending_tasks:
+            st.info("No pending tasks.")
         else:
-            st.info("No tasks scheduled yet.")
+            task_labels = [
+                f"{t.time} — [{t.pet_name}] {t.description}"
+                for t in pending_tasks
+            ]
+            selected_label = st.selectbox("Select task to complete", task_labels)
+            if st.button("Mark complete"):
+                idx = task_labels.index(selected_label)
+                scheduler.mark_complete(pending_tasks[idx])
+                st.success(f"'{pending_tasks[idx].description}' marked complete!")
+                if pending_tasks[idx].frequency in ("daily", "weekly"):
+                    st.info("Recurring task — next occurrence scheduled automatically.")
+                st.rerun()
