@@ -31,6 +31,27 @@ PawPal+ includes four algorithmic features in the `Scheduler` class:
 - **Recurring tasks** — when `mark_complete()` is called on a `daily` or `weekly` task, a new instance is automatically created for the next due date using Python's `timedelta`.
 - **Conflict detection** — the scheduler flags any two tasks for the same pet scheduled at the exact same time, returning a warning string rather than crashing.
 
+## Testing PawPal+
+
+Run the full test suite with:
+
+```bash
+python -m pytest
+```
+
+The suite lives in `tests/test_pawpal.py` and covers five behaviors:
+
+| Test | What it verifies |
+|---|---|
+| `test_task_completion` | `mark_complete()` flips task status from `pending` to `complete` |
+| `test_task_addition` | Adding a task to a `Pet` increases its task count by 1 |
+| `test_sort_correctness` | `sort_by_time()` returns tasks in ascending chronological order |
+| `test_recurrence_logic` | Completing a `daily` task auto-creates a new task due the next day |
+| `test_conflict_detection` | Two tasks for the same pet at the same time produce a warning |
+
+**Confidence level: ★★★★☆ (4/5)**
+All five tests pass. The main gap is duration-based conflict detection — the current scheduler only flags exact time matches, not overlapping windows. That would be the next thing to test and implement.
+
 ## Getting started
 
 ### Setup
