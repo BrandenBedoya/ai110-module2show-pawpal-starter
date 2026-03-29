@@ -32,6 +32,10 @@ Your final app should:
 - **Conflict detection** — the scheduler warns when two tasks for the same pet share the exact same time slot
 - **Mark complete** — tasks can be marked done directly from the UI; recurring tasks self-schedule
 
+## Demo
+
+<a href="tests/screenshots/final-test-1.png" target="_blank"><img src="tests/screenshots/final-test-1.png" title="PawPal App" width="" alt="PawPal App" class="center-block" /></a>
+
 ## Smarter Scheduling
 
 PawPal+ includes four algorithmic features in the `Scheduler` class:
