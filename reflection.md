@@ -2,10 +2,25 @@
 
 ## 1. System Design
 
+**Three core user actions (Step 1):**
+
+1. Add a pet to an owner's profile (name, species, age)
+2. Add a care task to a specific pet (description, scheduled time, frequency)
+3. View a sorted daily schedule across all pets, with conflict warnings highlighted
+
 **a. Initial design**
 
-- Briefly describe your initial UML design.
-- What classes did you include, and what responsibilities did you assign to each?
+The system uses four classes organized in a clear ownership hierarchy:
+
+- **Task** (dataclass): The atomic unit of care. Holds what needs to happen (`description`), when (`time` in HH:MM), how often (`frequency`: daily/weekly/none), which pet it belongs to (`pet_name`), its current `status`, and its `due_date`. Using a dataclass keeps attribute declaration clean and avoids boilerplate `__init__` code.
+
+- **Pet** (dataclass): Represents a single animal with basic info (`name`, `species`, `age`) and a list of its `Task` objects. Exposes `add_task()` and `get_tasks()`. Using a dataclass here is valid because a Pet's primary job is holding data — its behavior is minimal.
+
+- **Owner** (regular class): The root of the data tree. Holds the owner's `name`, `email`, and a list of `Pet` objects. Uses a regular class because it has meaningful behavior (`add_pet`, `get_all_tasks`) that benefits from explicit `__init__` control and potential future extension.
+
+- **Scheduler** (regular class): The algorithmic brain. It holds a reference to an `Owner` and exposes all scheduling operations: `sort_by_time()`, `filter_tasks()`, `mark_complete()` (with recurrence logic), and `detect_conflicts()`. It does not own any data — it reads from Owner and mutates Tasks in place.
+
+Key relationship: `Owner → Pet → Task` is a strict composition chain. `Scheduler` sits outside this chain and manages it.
 
 **b. Design changes**
 
