@@ -34,13 +34,13 @@ Yes, simply used Claude to help refactor and make sure the relationships made se
 
 **a. Constraints and priorities**
 
-- What constraints does your scheduler consider (for example: time, priority, preferences)?
-- How did you decide which constraints mattered most?
+The scheduler considers two constraints: **time** (HH:MM) and **completion status** (pending/complete). Time was prioritized first because the core user need is knowing *when* to do something. Status was second because filtering completed tasks reduces noise in the daily view. Pet name filtering was added so owners with multiple pets can focus on one animal at a time.
 
 **b. Tradeoffs**
 
-- Describe one tradeoff your scheduler makes.
-- Why is that tradeoff reasonable for this scenario?
+The conflict detector only flags tasks scheduled at the **exact same time** — it does not check for overlapping durations. For example, a 30-minute walk starting at 07:00 and a 15-minute feeding starting at 07:20 would not be flagged as a conflict, even though they overlap in reality.
+
+This is a reasonable tradeoff for this scenario because tasks in PawPal+ don't currently have a duration field — adding one would increase complexity significantly for a v1 app. Exact-time matching catches the most common mistake (accidentally double-booking a slot) without requiring the scheduler to reason about time ranges.
 
 ---
 
